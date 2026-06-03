@@ -4,16 +4,20 @@
 
 ## Course
 
+Courses are created on first rating. Name, address, lat/lng, and `google_place_id` are populated via Google Places at search time. Golf-specific fields are optionally provided by the user at time of first rating.
+
 | Field | Type | Notes |
 |---|---|---|
 | `id` | uuid | |
+| `google_place_id` | string | From Google Places API; unique; used to prevent duplicates |
 | `name` | string | |
 | `address` | string | |
 | `lat` | float | |
 | `lng` | float | |
-| `par` | int | |
-| `slope` | int | USGA slope rating |
-| `aggregate_score` | float | Computed average of all `UserCourseRating.score` for this course; updated via background job |
+| `par` | int | Nullable; optionally provided by user at first rating |
+| `slope` | int | Nullable; USGA slope rating; optionally provided by user at first rating |
+| `aggregate_score` | float | Nullable; computed average of all `UserCourseRating.score`; updated via background job |
+| `created_at` | datetime | |
 
 ---
 
@@ -56,6 +60,7 @@ The computed rating a user has assigned to a course, derived from pairwise compa
 | `score` | float | 0.0–10.0, tenths precision |
 | `initial_sentiment` | enum | `disliked` \| `fine` \| `liked` |
 | `comparison_count` | int | Number of comparisons used to compute this score |
+| `photos` | string[] | Array of URLs; photos are attached to the rating, not the round |
 | `last_updated` | datetime | |
 
 **Constraint:** unique on `(user_id, course_id)`
@@ -106,9 +111,8 @@ Auto-created whenever a `Round` is logged. Visible in the activity feed unless `
 | `user_id` | uuid | FK → User |
 | `course_id` | uuid | FK → Course |
 | `round_id` | uuid | FK → Round; always present |
-| `rating_id` | uuid | FK → UserCourseRating; optional — only present if user rated or re-rated during this round |
+| `rating_id` | uuid | FK → UserCourseRating; always present — first play requires a rating; subsequent rounds without re-rating carry forward the existing rating |
 | `notes` | text | Optional |
-| `photos` | string[] | Array of URLs |
 | `hidden` | bool | Default: false; set at round-log time via "hide from feed" checkbox. Hidden posts excluded from activity feed but visible on personal leaderboard. |
 | `created_at` | datetime | |
 

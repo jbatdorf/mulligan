@@ -67,7 +67,7 @@ mulligan/
 ├── packages/
 │   ├── ui/                   # Shared component library
 │   ├── schemas/              # Zod validation schemas (shared across api + mobile + web)
-│   ├── db/                   # Prisma schema, migrations, client
+│   ├── db/                   # Drizzle schema, migrations, client
 │   ├── config/               # Shared tsconfig, eslint, prettier
 │   └── utils/                # Shared business logic
 ├── services/
@@ -91,7 +91,5 @@ api           →  @mulligan/db        ✅
 
 | Package | Contents | Consumers |
 |---|---|---|
-| `packages/db` | Prisma models + migrations | `apps/api` only |
+| `packages/db` | Drizzle models + migrations | `apps/api` only |
 | `packages/schemas` | Zod validation schemas + inferred types | `apps/api`, `apps/mobile`, `apps/web` |
-
-> **Rule:** Prisma types never leak into the UI. An explicit mapper layer in `apps/api` translates DB types → tRPC response types, keeping the boundary compiler-enforced.
