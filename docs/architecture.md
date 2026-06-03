@@ -59,7 +59,7 @@
 ## Monorepo Structure
 
 ```
-fairway-app/
+mulligan/
 ├── apps/
 │   ├── mobile/               # React Native + Expo
 │   ├── web/                  # Next.js
@@ -81,10 +81,10 @@ fairway-app/
 ## Package Dependency Rules
 
 ```
-mobile / web  →  @fairway/schemas   ✅
-mobile / web  →  @fairway/db        ❌  never
-api           →  @fairway/schemas   ✅
-api           →  @fairway/db        ✅
+mobile / web  →  @mulligan/schemas   ✅
+mobile / web  →  @mulligan/db        ❌  never
+api           →  @mulligan/schemas   ✅
+api           →  @mulligan/db        ✅
 ```
 
 ## Schema Boundaries
