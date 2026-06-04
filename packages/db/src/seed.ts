@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { faker } from "@faker-js/faker";
@@ -155,11 +154,14 @@ async function seed() {
       // A few comparisons per rating
       const otherCourses = ratedCourses.filter((c) => c.id !== course.id);
       for (const opponent of pickMultiple(otherCourses, randomInt(1, 3))) {
-        const userWon = faker.datatype.boolean();
+        const tied = faker.datatype.boolean({ probability: 0.1 });
+        const courseAWins = faker.datatype.boolean();
         await db.insert(comparisons).values({
           userId: user.id,
-          winnerCourseId: userWon ? course.id : opponent.id,
-          loserCourseId: userWon ? opponent.id : course.id,
+          courseAId: course.id,
+          courseBId: opponent.id,
+          winnerCourseId: tied ? null : courseAWins ? course.id : opponent.id,
+          tied,
         });
       }
     }

@@ -5,6 +5,7 @@ import { z } from "zod";
 export const selectComparisonSchema = createSelectSchema(comparisons);
 
 // userId is injected from auth session
+// winnerCourseId is null when tied = true
 export const insertComparisonSchema = createInsertSchema(comparisons).omit({
   id: true,
   userId: true,

@@ -77,8 +77,10 @@ A single head-to-head comparison event between two courses by a user. The underl
 |---|---|---|
 | `id` | uuid | |
 | `user_id` | uuid | FK → User |
-| `winner_course_id` | uuid | FK → Course |
-| `loser_course_id` | uuid | FK → Course |
+| `course_a_id` | uuid | FK → Course; one of the two compared courses |
+| `course_b_id` | uuid | FK → Course; the other compared course |
+| `winner_course_id` | uuid | Nullable FK → Course; null when `tied = true` |
+| `tied` | bool | Default: false; true when user picked "equally liked" |
 | `created_at` | datetime | |
 
 ---
