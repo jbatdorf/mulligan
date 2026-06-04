@@ -1,2 +1,2 @@
 - conventional commits
-- 
+- always SHA-pin everything if possible
