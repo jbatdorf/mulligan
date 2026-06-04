@@ -2,13 +2,26 @@
   "name": "api",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.ts",
   "scripts": {
+    "dev": "dotenv -e ../../.env tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "fastify": "^5.8.5"
+    "@trpc/server": "11.17.0",
+    "db": "workspace:*",
+    "fastify": "5.8.5",
+    "fastify-plugin": "5.1.0",
+    "schemas": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "25.9.1",
+    "dotenv-cli": "11.0.0",
+    "tsx": "4.22.4",
+    "typescript": "6.0.3"
   }
 }
