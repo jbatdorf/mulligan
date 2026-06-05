@@ -86,6 +86,16 @@ async function run() {
     
   }
 
+  // round.list
+  const rounds = await client.round.list.query();
+  console.log(`✅ round.list             → ${rounds.length} round(s)`);
+
+  // round.listByCourse (first leaderboard course if any)
+  if (leaderboard[0]) {
+    const courseRounds = await client.round.listByCourse.query({ courseId: leaderboard[0].id });
+    console.log(`✅ round.listByCourse     → ${courseRounds.length} round(s) at ${leaderboard[0].name}`);
+  }
+
   // stubs — just check they're reachable
   const feed = await client.feed.list.query();
   console.log("✅ feed.list (stub)       →", feed);
