@@ -26,8 +26,8 @@ PostgreSQL (source of truth)
    export type Sentiment = z.infer<typeof SentimentSchema>;
 
    export const InsertRatingSchema = z.object({
-     userId: z.string().uuid(),
-     courseId: z.string().uuid(),
+     userId: z.uuid(),
+     courseId: z.uuid(),
      score: z.number().min(0).max(10),
      initialSentiment: SentimentSchema,
    });

@@ -76,7 +76,7 @@ export const roundRouter = router({
 
   /** List the current user's rounds at a specific course, newest first. */
   listByCourse: protectedProcedure
-    .input(z.object({ courseId: z.string().uuid() }))
+    .input(z.object({ courseId: z.uuid() }))
     .query(async ({ ctx, input }) => {
       return ctx.db
         .select()

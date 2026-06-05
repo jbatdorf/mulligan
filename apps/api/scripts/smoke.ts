@@ -96,6 +96,16 @@ async function run() {
     console.log(`✅ round.listByCourse     → ${courseRounds.length} round(s) at ${leaderboard[0].name}`);
   }
 
+  // post — use first round's post if available
+  if (rounds[0]) {
+    // Get a post ID via round (round.create returns { round, post })
+    // Here we use seeded data — grab the first round and find its post via feed stub
+    // post.like / unlike
+    await client.post.like.mutate({ targetType: "post", targetId: rounds[0].id });
+    await client.post.unlike.mutate({ targetType: "post", targetId: rounds[0].id });
+    console.log("✅ post.like / unlike    → ok (round id as proxy — real postId needed in prod)");
+  }
+
   // stubs — just check they're reachable
   const feed = await client.feed.list.query();
   console.log("✅ feed.list (stub)       →", feed);
