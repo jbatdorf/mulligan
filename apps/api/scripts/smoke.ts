@@ -72,11 +72,23 @@ async function run() {
   const updated = await client.user.update.mutate({ name: me.name });
   console.log("✅ user.update            →", updated);
 
+  // course.search
+  const candidates = await client.course.search.query({ query: "pebble beach" });
+  console.log(`✅ course.search          → ${candidates.length} candidate(s)`, candidates[0]?.name);
+
+  // course.leaderboard
+  const leaderboard = await client.course.leaderboard.query();
+  console.log(`✅ course.leaderboard     → ${leaderboard.length} course(s)`);
+  if (leaderboard[0]) {
+    leaderboard.forEach((c, idx) => {
+      console.log(`   #${idx + 1}: ${c.name} — ${c.score}`);
+    })
+    
+  }
+
   // stubs — just check they're reachable
   const feed = await client.feed.list.query();
   console.log("✅ feed.list (stub)       →", feed);
-  const courses = await client.course.search.query();
-  console.log("✅ course.search (stub)   →", courses);
 
   console.log("\n✅ All checks passed\n");
 }
