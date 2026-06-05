@@ -49,7 +49,7 @@ export const userRouter = router({
 
   /** Public profile by ID. Private accounts return a limited shape. */
   get: protectedProcedure
-    .input(z.object({ userId: z.string().uuid() }))
+    .input(z.object({ userId: z.uuid() }))
     .query(async ({ ctx, input }) => {
       const rows = await ctx.db
         .select(publicUser)
@@ -87,7 +87,7 @@ export const userRouter = router({
 
   /** Follow another user. Idempotent — silently succeeds if already following. */
   follow: protectedProcedure
-    .input(z.object({ userId: z.string().uuid() }))
+    .input(z.object({ userId: z.uuid() }))
     .mutation(async ({ ctx, input }) => {
       if (input.userId === ctx.userId) {
         throw forbidden("You cannot follow yourself");
@@ -111,7 +111,7 @@ export const userRouter = router({
 
   /** Unfollow a user. Idempotent — silently succeeds if not following. */
   unfollow: protectedProcedure
-    .input(z.object({ userId: z.string().uuid() }))
+    .input(z.object({ userId: z.uuid() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db
         .delete(follows)
@@ -127,7 +127,7 @@ export const userRouter = router({
 
   /** List followers of a user. Gated on privacy. */
   followers: protectedProcedure
-    .input(z.object({ userId: z.string().uuid() }))
+    .input(z.object({ userId: z.uuid() }))
     .query(async ({ ctx, input }) => {
       const target = await ctx.db
         .select({ id: users.id, isPrivate: users.isPrivate })
@@ -153,7 +153,7 @@ export const userRouter = router({
 
   /** List who a user is following. Gated on privacy. */
   following: protectedProcedure
-    .input(z.object({ userId: z.string().uuid() }))
+    .input(z.object({ userId: z.uuid() }))
     .query(async ({ ctx, input }) => {
       const target = await ctx.db
         .select({ id: users.id, isPrivate: users.isPrivate })
