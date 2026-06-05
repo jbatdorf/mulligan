@@ -106,9 +106,15 @@ async function run() {
     console.log("✅ post.like / unlike    → ok (round id as proxy — real postId needed in prod)");
   }
 
-  // stubs — just check they're reachable
-  const feed = await client.feed.list.query();
-  console.log("✅ feed.list (stub)       →", feed);
+  // feed.list (page 1)
+  const feedPage1 = await client.feed.list.query({});
+  console.log(`✅ feed.list (p1)         → ${feedPage1.items.length} post(s), hasMore: ${feedPage1.nextCursor !== null}`);
+
+  // feed.list (page 2 via cursor, if available)
+  if (feedPage1.nextCursor) {
+    const feedPage2 = await client.feed.list.query({ cursor: feedPage1.nextCursor });
+    console.log(`✅ feed.list (p2)         → ${feedPage2.items.length} post(s)`);
+  }
 
   console.log("\n✅ All checks passed\n");
 }
