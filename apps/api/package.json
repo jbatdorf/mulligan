@@ -15,6 +15,7 @@
   "dependencies": {
     "@trpc/server": "11.17.0",
     "db": "workspace:*",
+    "drizzle-orm": "1.0.0-rc.3",
     "fastify": "5.8.5",
     "fastify-plugin": "5.1.0",
     "schemas": "workspace:*",

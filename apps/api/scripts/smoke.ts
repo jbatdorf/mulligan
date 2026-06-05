@@ -1,19 +1,18 @@
 /**
  * Smoke test — runs against a live local server.
- * Usage: dotenv -e ../../.env tsx scripts/smoke.ts <userId>
+ * Usage: dotenv -e ../../.env tsx scripts/smoke.ts <userId> [targetUserId]
  *
- * <userId> can be any UUID from your seeded users table.
+ * <userId>       — the viewer (seeded user UUID, used as the bearer token)
+ * [targetUserId] — optional second user to test get/followers/following/follow
+ *
  * The dev auth stub treats the bearer token as a literal userId.
  */
-import {
-  createTRPCClient,
-  httpBatchLink,
-} from "@trpc/client";
+import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import type { AppRouter } from "../src/router";
 
-const userId = process.argv[2];
+const [userId, targetUserId] = process.argv.slice(2);
 if (!userId) {
-  console.error("Usage: tsx scripts/smoke.ts <userId>");
+  console.error("Usage: tsx scripts/smoke.ts <userId> [targetUserId]");
   process.exit(1);
 }
 
@@ -31,37 +30,55 @@ const client = createTRPCClient<AppRouter>({
 async function run() {
   console.log(`\n🏌️  mulligan API smoke test`);
   console.log(`   server : ${BASE}`);
-  console.log(`   userId : ${userId}\n`);
+  console.log(`   userId : ${userId}`);
+  if (targetUserId) console.log(`   target : ${targetUserId}`);
+  console.log();
 
-  // /health (plain HTTP, not tRPC)
+  // /health
   const health = await fetch(`${BASE}/health`).then((r) => r.json());
-  console.log("✅ GET /health       →", health);
+  console.log("✅ GET /health           →", health);
 
   // user.me
   const me = await client.user.me.query();
-  console.log("✅ user.me           →", me);
+  console.log("✅ user.me               →", me);
 
-  // feed.list
+  // user.get (self)
+  const self = await client.user.get.query({ userId });
+  console.log("✅ user.get (self)        →", self);
+
+  // user.followers (self)
+  const followers = await client.user.followers.query({ userId });
+  console.log(`✅ user.followers (self)        → ${followers.length} follower(s)`);
+
+  // user.following (self)
+  const following = await client.user.following.query({ userId });
+  console.log(`✅ user.following (self)         → ${following.length} following`);
+
+  if (targetUserId) {
+    // user.get (other)
+    const other = await client.user.get.query({ userId: targetUserId });
+    console.log("✅ user.get (other)       →", other);
+
+    // user.follow
+    const followed = await client.user.follow.mutate({ userId: targetUserId });
+    console.log("✅ user.follow            →", followed);
+
+    // user.unfollow
+    const unfollowed = await client.user.unfollow.mutate({ userId: targetUserId });
+    console.log("✅ user.unfollow          →", unfollowed);
+  }
+
+  // user.update
+  const updated = await client.user.update.mutate({ name: me.name });
+  console.log("✅ user.update            →", updated);
+
+  // stubs — just check they're reachable
   const feed = await client.feed.list.query();
-  console.log("✅ feed.list         →", feed);
-
-  // course.search
+  console.log("✅ feed.list (stub)       →", feed);
   const courses = await client.course.search.query();
-  console.log("✅ course.search     →", courses);
+  console.log("✅ course.search (stub)   →", courses);
 
-  // rating.start (mutation)
-  const ratingStart = await client.rating.start.mutate();
-  console.log("✅ rating.start      →", ratingStart);
-
-  // round.create (mutation)
-  const round = await client.round.create.mutate();
-  console.log("✅ round.create      →", round);
-
-  // post.get
-  const post = await client.post.get.query();
-  console.log("✅ post.get          →", post);
-
-  console.log("\n✅ All procedures reachable\n");
+  console.log("\n✅ All checks passed\n");
 }
 
 run().catch((err) => {

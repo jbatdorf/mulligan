@@ -219,6 +219,9 @@ importers:
       db:
         specifier: workspace:*
         version: link:../../packages/db
+      drizzle-orm:
+        specifier: 1.0.0-rc.3
+        version: 1.0.0-rc.3(@types/pg@8.20.0)(pg@8.21.0)(zod@4.4.3)
       fastify:
         specifier: 5.8.5
         version: 5.8.5
