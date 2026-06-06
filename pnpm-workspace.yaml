@@ -5,3 +5,7 @@ packages:
 allowBuilds:
   esbuild: true
   msgpackr-extract: true
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - nativewind@4.2.5
+  - react-native-css-interop@0.2.5

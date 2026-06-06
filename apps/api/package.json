@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./trpc": "./src/router.ts"
+  },
   "scripts": {
     "dev": "dotenv -e ../../.env tsx watch src/index.ts",
     "start": "node dist/index.js",
