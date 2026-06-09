@@ -11,7 +11,8 @@
     "db:generate": "dotenv -e .env drizzle-kit generate",
     "db:migrate": "dotenv -e .env drizzle-kit migrate",
     "db:seed": "tsx --env-file=.env src/seed.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "lint": "eslint ."
   },
   "keywords": [],
   "author": "",
@@ -26,7 +27,9 @@
     "@faker-js/faker": "^10.4.0",
     "@types/node": "^25.9.1",
     "@types/pg": "^8.20.0",
+    "config": "workspace:*",
     "drizzle-kit": "1.0.0-rc.3",
+    "eslint": "10.4.1",
     "tsx": "^4.22.4"
   }
 }

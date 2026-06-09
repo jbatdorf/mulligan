@@ -35,8 +35,10 @@
   "devDependencies": {
     "@types/react": "~19.2.2",
     "api": "workspace:*",
-    "eslint": "^9.39.4",
+    "config": "workspace:*",
+    "eslint": "9.39.4",
     "eslint-config-expo": "~56.0.4",
+    "eslint-config-prettier": "10.1.8",
     "tailwindcss": "3.4.19",
     "typescript": "~6.0.3"
   },

@@ -8,6 +8,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "lint": "eslint .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -20,6 +21,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "config": "workspace:*",
+    "eslint": "10.4.1",
     "typescript": "~6.0.3"
   }
 }

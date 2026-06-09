@@ -1,6 +1,0 @@
-module.exports = {
-    rules: {
-      "no-console": "warn",
-      "prefer-const": "error",
-    }
-  }
