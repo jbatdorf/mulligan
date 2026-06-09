@@ -1,0 +1,12 @@
+
+[2m$ expo lint[22m
+[90menv: load .env[39m
+[90menv: export EXPO_PUBLIC_API_URL EXPO_PUBLIC_DEV_USER_ID[39m
+[0m[0m
+[0m[4m/Users/joebatdorf/Desktop/professional/personal_dev/mulligan/apps/mobile/src/components/app-tabs.web.tsx[24m[0m
+[0m   [2m9:45[22m  [33mwarning[39m  '/Users/joebatdorf/Desktop/professional/personal_dev/mulligan/apps/mobile/node_modules/react-native/index.js' imported multiple times  [2mimport/no-duplicates[22m[0m
+[0m  [2m10:22[22m  [33mwarning[39m  '/Users/joebatdorf/Desktop/professional/personal_dev/mulligan/apps/mobile/node_modules/react-native/index.js' imported multiple times  [2mimport/no-duplicates[22m[0m
+[0m[0m
+[0m[33m[1m✖ 2 problems (0 errors, 2 warnings)[22m[39m[0m
+[0m[33m[1m[22m[39m[33m[1m  0 errors and 1 warning potentially fixable with the `--fix` option.[22m[39m[0m
+[0m[33m[1m[22m[39m[0m

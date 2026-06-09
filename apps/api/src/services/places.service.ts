@@ -13,7 +13,7 @@ export interface PlacesService {
 // Stub implementation — returns a fixed set of candidates for any query.
 // Replace with a real Google Places Text Search call when ready.
 export const stubPlacesService: PlacesService = {
-  async search(_query) {
+  async search() {
     return [
       {
         googlePlaceId: "ChIJN1t_tDeuEmsRUsoyG83frY4",

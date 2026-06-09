@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Smoke test — runs against a live local server.
  * Usage: dotenv -e ../../.env tsx scripts/smoke.ts <userId> [targetUserId]

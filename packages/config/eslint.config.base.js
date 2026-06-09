@@ -10,6 +10,8 @@ export default tseslint.config(
       "**/.expo/**",
       "**/.turbo/**",
       "**/drizzle/**",
+      "**/scripts/**",
+      "**/seed.ts"
     ],
   },
   js.configs.recommended,
