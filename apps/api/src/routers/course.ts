@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { eq, desc } from "drizzle-orm";
 import { courses, userCourseRatings } from "db";
+import { placeCandidateSchema } from "schemas";
 import { router, protectedProcedure } from "../trpc";
 import { notFound } from "../lib/errors";
 import { stubPlacesService } from "../services/places.service";
@@ -15,6 +16,32 @@ export const courseRouter = router({
     .input(z.object({ query: z.string().min(1) }))
     .query(async ({ input }) => {
       return stubPlacesService.search(input.query);
+    }),
+
+  /**
+   * Get-or-create a course from a selected Places candidate.
+   * Upserts by `googlePlaceId` (the unique key) and returns the course row,
+   * giving the client the internal `courseId` that `rating.start` requires.
+   */
+  getOrCreateFromPlace: protectedProcedure
+    .input(placeCandidateSchema)
+    .mutation(async ({ ctx, input }) => {
+      const [course] = await ctx.db
+        .insert(courses)
+        .values(input)
+        .onConflictDoUpdate({
+          target: courses.googlePlaceId,
+          // Refresh place-sourced fields; never clobber computed columns.
+          set: {
+            name: input.name,
+            address: input.address,
+            lat: input.lat,
+            lng: input.lng,
+          },
+        })
+        .returning();
+
+      return course;
     }),
 
   /** Get a course by its internal ID. */

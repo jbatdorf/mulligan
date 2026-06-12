@@ -4,7 +4,11 @@ import { userCourseRatings } from "db";
 import { startRatingInput, submitComparisonInput } from "schemas";
 import { router, protectedProcedure } from "../trpc";
 import { notFound } from "../lib/errors";
-import { startSession, submitComparison } from "../services/rating.service";
+import {
+  cancelSession,
+  startSession,
+  submitComparison,
+} from "../services/rating.service";
 
 export const ratingRouter = router({
   /** Open a comparison session and return the first pair (or finalize if the band is empty). */
@@ -18,6 +22,11 @@ export const ratingRouter = router({
   submitComparison: protectedProcedure
     .input(submitComparisonInput)
     .mutation(({ ctx, input }) => submitComparison(ctx.userId, input)),
+
+  /** Abandon any in-progress comparison session for the current user. */
+  cancel: protectedProcedure
+    .input(z.void())
+    .mutation(({ ctx }) => cancelSession(ctx.userId)),
 
   /** Get the current user's rating for a course. */
   get: protectedProcedure

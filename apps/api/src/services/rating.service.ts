@@ -232,6 +232,12 @@ async function finalize(
   return result;
 }
 
+/** rating.cancel — drop any in-progress session so the user isn't locked out. */
+export async function cancelSession(userId: string): Promise<{ ok: true }> {
+  await redis.del(sessionKey(userId));
+  return { ok: true };
+}
+
 /** rating.start — open a session and return the first comparison pair (doc §6). */
 export async function startSession(
   userId: string,

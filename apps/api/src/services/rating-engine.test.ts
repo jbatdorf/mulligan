@@ -145,3 +145,76 @@ describe("isTopLikedGroup — only one course holds 10.0", () => {
     expect(isTopLikedGroup(1, 2, "disliked")).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Invariant: exactly one course holds the band ceiling (10.0) after insertion
+// ---------------------------------------------------------------------------
+
+/** Count entries in a score map that equal exactly `value`. */
+function countAt(scores: Map<string, number>, value: number): number {
+  return [...scores.values()].filter((s) => s === value).length;
+}
+
+describe("ceiling invariant — at most one course holds hi=10.0 after insertion", () => {
+  it("sole new top (2 existing → 3 groups): only X at 10.0", () => {
+    // Before insertion: [[A],[B]], B was top at 10.0.
+    // X beats B (the top pivot) → insertionIndex=2.
+    const base: RankGroups = [["A"], ["B"]];
+    const result = runInsertion(base, "X", ["win"]);
+    // expected: [[A],[B],[X]]
+    expect(result).toEqual([["A"], ["B"], ["X"]]);
+    const scores = scoreBand(result, LIKED);
+    expect(countAt(scores, 10.0)).toBe(1);
+    expect(scores.get("X")).toBe(10.0);
+    expect(scores.get("B")).toBeLessThan(10.0);
+  });
+
+  it("sole new top (4 existing → 5 groups): only X at 10.0, old top re-scored below", () => {
+    // Mirrors the reported repro: 4 liked courses, Medinah was top at 10.0.
+    // X wins both comparisons (against group[2] then group[3]=Medinah).
+    const base: RankGroups = [["A"], ["B"], ["C"], ["Medinah"]];
+    const result = runInsertion(base, "X", ["win", "win"]);
+    // Binary search: lo=0,hi=4 → mid=2 win → lo=3; mid=3 win → lo=4, done → insert at 4.
+    expect(result).toEqual([["A"], ["B"], ["C"], ["Medinah"], ["X"]]);
+    const scores = scoreBand(result, LIKED);
+    expect(countAt(scores, 10.0)).toBe(1);
+    expect(scores.get("X")).toBe(10.0);
+    expect(scores.get("Medinah")).toBeLessThan(10.0);
+  });
+
+  it("new top above a tied top group (both former tops re-scored below 10.0)", () => {
+    // Two courses were tied at the top of the liked band.
+    const base: RankGroups = [["A"], ["P", "Q"]];
+    const result = runInsertion(base, "X", ["win"]);
+    // X beats the top group → insert at 2: [[A],[P,Q],[X]]
+    expect(result).toEqual([["A"], ["P", "Q"], ["X"]]);
+    const scores = scoreBand(result, LIKED);
+    expect(countAt(scores, 10.0)).toBe(1);
+    expect(scores.get("X")).toBe(10.0);
+    expect(scores.get("P")).toBeLessThan(10.0);
+    expect(scores.get("Q")).toBeLessThan(10.0);
+  });
+
+  it("new top in a single-entry liked band: only X at 10.0 (prior sole course drops to lo)", () => {
+    // One existing liked course (currently at lo because g=1).
+    // X beats it → insert above it.
+    const base: RankGroups = [["Solo"]];
+    const result = runInsertion(base, "X", ["win"]);
+    expect(result).toEqual([["Solo"], ["X"]]);
+    const scores = scoreBand(result, LIKED);
+    expect(countAt(scores, 10.0)).toBe(1);
+    expect(scores.get("X")).toBe(10.0);
+  });
+
+  it("new course NOT at top: the original top keeps 10.0 (exactly one at ceiling)", () => {
+    // X loses to the pivot and ends up in the middle, not at the top.
+    const base: RankGroups = [["A"], ["B"], ["Top"]];
+    const result = runInsertion(base, "X", ["loss", "win"]);
+    // lo=0,hi=3 → mid=1, loss → hi=1; mid=0, win → lo=1, done → insert at 1.
+    expect(result).toEqual([["A"], ["X"], ["B"], ["Top"]]);
+    const scores = scoreBand(result, LIKED);
+    expect(countAt(scores, 10.0)).toBe(1);
+    expect(scores.get("Top")).toBe(10.0);
+    expect(scores.get("X")).toBeLessThan(10.0);
+  });
+});
