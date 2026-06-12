@@ -5,7 +5,7 @@ import { stubAuthProvider } from "./lib/auth";
 export async function createContext({ req }: CreateFastifyContextOptions) {
   const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
   const user = await stubAuthProvider.verify(token);
-  return { db, userId: user?.userId ?? null };
+  return { db, userId: user?.userId ?? null, log: req.log };
 }
 
 export type Context = Awaited<ReturnType<typeof createContext>>;

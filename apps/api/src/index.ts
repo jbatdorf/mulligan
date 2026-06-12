@@ -5,7 +5,18 @@ import { appRouter } from "./router";
 import { createContext } from "./context";
 import type { AppRouter } from "./router";
 
-const app = Fastify({ logger: true });
+const isDev = process.env.NODE_ENV !== "production";
+const app = Fastify({
+  logger: isDev
+    ? {
+        level: "debug",
+        transport: {
+          target: "pino-pretty",
+          options: { colorize: true, translateTime: "HH:MM:ss", ignore: "pid,hostname" },
+        },
+      }
+    : true,
+});
 
 app.get("/health", async () => ({ status: "ok" }));
 

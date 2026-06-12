@@ -15,13 +15,13 @@ export const ratingRouter = router({
   start: protectedProcedure
     .input(startRatingInput)
     .mutation(({ ctx, input }) =>
-      startSession(ctx.userId, input.courseId, input.initialSentiment)
+      startSession(ctx.userId, input.courseId, input.initialSentiment, ctx.log)
     ),
 
   /** Record a comparison answer; returns the next pair or the final score. */
   submitComparison: protectedProcedure
     .input(submitComparisonInput)
-    .mutation(({ ctx, input }) => submitComparison(ctx.userId, input)),
+    .mutation(({ ctx, input }) => submitComparison(ctx.userId, input, ctx.log)),
 
   /** Abandon any in-progress comparison session for the current user. */
   cancel: protectedProcedure

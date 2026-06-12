@@ -10,6 +10,11 @@ import { db, users, courses, userCourseRatings, comparisons } from "db";
 import { redis } from "../src/lib/redis";
 import { startSession, submitComparison } from "../src/services/rating.service";
 
+const scriptLog = {
+  info: (obj: Record<string, unknown>, msg?: string) => console.log(`[info] ${msg ?? ""}`, obj),
+  debug: (obj: Record<string, unknown>, msg?: string) => console.log(`[debug] ${msg ?? ""}`, obj),
+};
+
 const userId = randomUUID();
 const courseIds: string[] = [];
 
@@ -59,12 +64,12 @@ async function run() {
   const c = await mkCourse("Course C");
 
   // 1. First liked course → empty band → immediate finalize at floor 6.7.
-  const r1 = await startSession(userId, a, "liked");
+  const r1 = await startSession(userId, a, "liked", scriptLog);
   check("first liked course finalizes with 0 comparisons", r1.done === true, r1);
   check("first liked course scores 6.7", r1.done && r1.score === 6.7, r1);
 
   // 2. Rate B liked, beat A → B=10.0, A=6.7.
-  const r2start = await startSession(userId, b, "liked");
+  const r2start = await startSession(userId, b, "liked", scriptLog);
   check("second course returns a pair", r2start.done === false, r2start);
   if (r2start.done === false) {
     const r2 = await submitComparison(userId, {
@@ -72,18 +77,18 @@ async function run() {
       winnerCourseId: b,
       loserCourseId: a,
       tied: false,
-    });
+    }, scriptLog);
     check("B beats A → B=10.0", r2.done && r2.score === 10.0, r2);
     check("A re-scored to 6.7", (await scoreOf(a)) === 6.7, await scoreOf(a));
   }
 
   // 3. Concurrent session rejected while one is open.
-  const s3 = await startSession(userId, c, "liked");
+  const s3 = await startSession(userId, c, "liked", scriptLog);
   check("third course returns a pair", s3.done === false, s3);
   if (s3.done === false) {
     let rejected = false;
     try {
-      await startSession(userId, c, "liked");
+      await startSession(userId, c, "liked", scriptLog);
     } catch {
       rejected = true;
     }
@@ -97,7 +102,7 @@ async function run() {
       winnerCourseId: step.pivotCourseId,
       loserCourseId: c,
       tied: false,
-    });
+    }, scriptLog);
     let cScore: number | undefined;
     if (next.done) {
       cScore = next.score;
@@ -107,7 +112,7 @@ async function run() {
         winnerCourseId: c,
         loserCourseId: next.pivotCourseId,
         tied: false,
-      });
+      }, scriptLog);
       cScore = fin.done ? fin.score : undefined;
     }
     check(
@@ -132,7 +137,7 @@ async function run() {
   check("aggregate_score computed for B", bCourse.agg !== null, bCourse.agg);
 
   // 6. Re-rate A across bands: liked → disliked. A leaves liked band.
-  const reA = await startSession(userId, a, "disliked");
+  const reA = await startSession(userId, a, "disliked", scriptLog);
   const reAScore = reA.done ? reA.score : undefined;
   check("re-rate A into disliked band → score in [0,3.3]", reAScore === 0.0, reAScore);
   const aSent = (

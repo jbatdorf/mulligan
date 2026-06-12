@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db, courses, userCourseRatings, comparisons } from "db";
 import type { RatingStepResult, Sentiment } from "schemas";
 import { redis } from "../lib/redis";
@@ -18,6 +18,11 @@ import {
 
 type Db = typeof db;
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+
+interface Logger {
+  info(obj: Record<string, unknown>, msg?: string): void;
+  debug(obj: Record<string, unknown>, msg?: string): void;
+}
 
 const SESSION_TTL_SECONDS = 60 * 60; // 1h (doc §5)
 const sessionKey = (userId: string) => `rating:session:${userId}`;
@@ -39,6 +44,7 @@ interface RatingSession {
   hi: number;
   answered: AnsweredComparison[];
   createdAt: string;
+  courseNames: Record<string, string>;
 }
 
 /** Group rows ordered worst→best (score asc) into rank groups of equal score. */
@@ -232,6 +238,19 @@ async function finalize(
   return result;
 }
 
+async function logBandRankings(userId: string, sentiment: Sentiment, log: Logger): Promise<void> {
+  const rows = await db
+    .select({ name: courses.name, score: userCourseRatings.score })
+    .from(userCourseRatings)
+    .innerJoin(courses, eq(userCourseRatings.courseId, courses.id))
+    .where(and(eq(userCourseRatings.userId, userId), eq(userCourseRatings.initialSentiment, sentiment)))
+    .orderBy(desc(userCourseRatings.score));
+  log.debug(
+    { sentiment, rankings: rows.map((r, i) => `#${i + 1} ${r.name} (${r.score.toFixed(1)})`) },
+    `${sentiment} band rankings`
+  );
+}
+
 /** rating.cancel — drop any in-progress session so the user isn't locked out. */
 export async function cancelSession(userId: string): Promise<{ ok: true }> {
   await redis.del(sessionKey(userId));
@@ -242,20 +261,39 @@ export async function cancelSession(userId: string): Promise<{ ok: true }> {
 export async function startSession(
   userId: string,
   courseId: string,
-  sentiment: Sentiment
+  sentiment: Sentiment,
+  log: Logger
 ): Promise<RatingStepResult> {
   if (await redis.exists(sessionKey(userId))) {
     throw badRequest("You already have a rating in progress");
   }
 
   const [course] = await db
-    .select({ id: courses.id })
+    .select({ id: courses.id, name: courses.name })
     .from(courses)
     .where(eq(courses.id, courseId))
     .limit(1);
   if (!course) throw notFound("Course not found");
 
   const bandSnapshot = await loadBandGroups(db, userId, sentiment, courseId);
+
+  const allBandIds = bandSnapshot.flat();
+  const nameRows =
+    allBandIds.length > 0
+      ? await db
+          .select({ id: courses.id, name: courses.name })
+          .from(courses)
+          .where(inArray(courses.id, allBandIds))
+      : [];
+  const courseNames: Record<string, string> = {
+    [courseId]: course.name,
+    ...Object.fromEntries(nameRows.map((r) => [r.id, r.name])),
+  };
+
+  log.info(
+    { course: course.name, sentiment, bandSize: bandSnapshot.length },
+    "rating session started"
+  );
 
   const session: RatingSession = {
     sessionId: randomUUID(),
@@ -267,11 +305,18 @@ export async function startSession(
     hi: bandSnapshot.length,
     answered: [],
     createdAt: new Date().toISOString(),
+    courseNames,
   };
 
   // Empty band → no comparisons; the course lands at the band floor (doc §10).
   if (session.lo === session.hi) {
-    return finalize(session, { insertionIndex: session.lo });
+    log.debug({ course: course.name }, "band empty — finalizing at floor");
+    const result = await finalize(session, { insertionIndex: session.lo });
+    if (result.done) {
+      log.info({ course: course.name, score: result.score, rank: result.rank }, "rating finalized");
+      await logBandRankings(userId, sentiment, log);
+    }
+    return result;
   }
 
   await writeSession(session);
@@ -279,6 +324,10 @@ export async function startSession(
   // pivot is guaranteed not-done here (lo < hi).
   const pivotCourseId =
     session.bandSnapshot[(pivot as { pivotGroupIndex: number }).pivotGroupIndex][0];
+  log.debug(
+    { rating: course.name, pivot: courseNames[pivotCourseId], lo: session.lo, hi: session.hi },
+    "first comparison"
+  );
   return pairResult(session, pivotCourseId);
 }
 
@@ -290,7 +339,8 @@ export async function submitComparison(
     winnerCourseId: string | null;
     loserCourseId: string | null;
     tied: boolean;
-  }
+  },
+  log: Logger
 ): Promise<RatingStepResult> {
   const raw = await redis.get(sessionKey(userId));
   if (!raw) throw notFound("No active rating session");
@@ -322,6 +372,19 @@ export async function submitComparison(
     throw badRequest("Only one course can hold 10.0 — pick a winner");
   }
 
+  const outcome = input.tied ? "tied" : input.winnerCourseId === session.courseId ? "win" : "loss";
+  log.info(
+    {
+      rating: session.courseNames[session.courseId],
+      pivot: session.courseNames[pivotCourseId],
+      outcome,
+      step: session.answered.length + 1,
+      lo: session.lo,
+      hi: session.hi,
+    },
+    "comparison received"
+  );
+
   session.answered.push({
     courseAId: session.courseId,
     courseBId: pivotCourseId,
@@ -330,11 +393,18 @@ export async function submitComparison(
   });
 
   if (input.tied) {
-    return finalize(session, { joinAt: mid });
+    log.debug({ reason: "tied" }, "finalizing");
+    const result = await finalize(session, { joinAt: mid });
+    if (result.done) {
+      log.info(
+        { course: session.courseNames[session.courseId], score: result.score, rank: result.rank },
+        "rating finalized"
+      );
+      await logBandRankings(userId, session.sentiment, log);
+    }
+    return result;
   }
 
-  // win = the rated course beat the pivot.
-  const outcome = input.winnerCourseId === session.courseId ? "win" : "loss";
   if (outcome === "win") {
     session.lo = mid + 1;
   } else {
@@ -343,14 +413,41 @@ export async function submitComparison(
 
   const pivot = nextPivot(session.lo, session.hi);
   if (pivot.done) {
-    return finalize(session, { insertionIndex: pivot.insertionIndex });
+    log.debug({ reason: "converged", insertionIndex: pivot.insertionIndex }, "finalizing");
+    const result = await finalize(session, { insertionIndex: pivot.insertionIndex });
+    if (result.done) {
+      log.info(
+        { course: session.courseNames[session.courseId], score: result.score, rank: result.rank },
+        "rating finalized"
+      );
+      await logBandRankings(userId, session.sentiment, log);
+    }
+    return result;
   }
   if (isCapped(session.answered.length)) {
-    return finalize(session, {
-      insertionIndex: approxInsertionIndex(session.lo, session.hi),
-    });
+    const approxIndex = approxInsertionIndex(session.lo, session.hi);
+    log.debug({ reason: "capped", approxIndex }, "finalizing");
+    const result = await finalize(session, { insertionIndex: approxIndex });
+    if (result.done) {
+      log.info(
+        { course: session.courseNames[session.courseId], score: result.score, rank: result.rank },
+        "rating finalized"
+      );
+      await logBandRankings(userId, session.sentiment, log);
+    }
+    return result;
   }
 
   await writeSession(session);
-  return pairResult(session, session.bandSnapshot[pivot.pivotGroupIndex][0]);
+  const nextPivotId = session.bandSnapshot[pivot.pivotGroupIndex][0];
+  log.debug(
+    {
+      rating: session.courseNames[session.courseId],
+      pivot: session.courseNames[nextPivotId],
+      lo: session.lo,
+      hi: session.hi,
+    },
+    "next comparison"
+  );
+  return pairResult(session, nextPivotId);
 }
