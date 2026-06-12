@@ -1,22 +1,30 @@
 {
-  "name": "fairway",
+  "name": "mulligan",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "docker compose up -d && pnpm --filter db db:migrate && turbo dev",
+    "db:seed": "pnpm --filter db db:seed",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint -- --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "license": "ISC",
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "^11.5.0",
-      "onFail": "download"
-    }
-  },
   "type": "module",
   "private": "true",
   "devDependencies": {
+    "husky": "9.1.7",
+    "lint-staged": "17.0.7",
+    "prettier": "3.8.3",
     "turbo": "^2.9.16"
-  }
+  },
+  "lint-staged": {
+    "*.{js,mjs,cjs,ts,tsx,mts,cts}": "eslint --fix",
+    "*.{js,mjs,cjs,ts,tsx,mts,cts,json,md,css,yaml,yml}": "prettier --write"
+  },
+  "packageManager": "pnpm@11.5.1+sha512.93f7b57422ea7068257235b4c16eb60762eb68e1dc23723199cc739043ea9be2c4143274a399d8c6defa2b1176226d9ca1c4b63482d6200c1a8fbaa78c1d1485"
 }

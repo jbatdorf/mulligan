@@ -1,0 +1,3 @@
+- conventional commits
+- always SHA-pin everything if possible
+- z.string().uuid() is deprecated, use z.uuid() instead

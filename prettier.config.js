@@ -1,6 +1,6 @@
-module.exports = {
-    semi: false,
-    singleQuote: true,
-    tabWidth: 2,
-    trailingComma: "es5"
-}
+export default {
+  semi: false,
+  singleQuote: true,
+  tabWidth: 2,
+  trailingComma: "es5",
+};
