@@ -15,8 +15,8 @@ type State =
   | { step: 'search' }
   | { step: 'sentiment'; course: SelectedCourse }
   | { step: 'compare'; course: SelectedCourse; sessionId: string; pivotCourseId: string }
-  | { step: 'round'; course: SelectedCourse; score: number; rank: number }
-  | { step: 'done'; course: SelectedCourse; score: number; rank: number };
+  | { step: 'round'; course: SelectedCourse; score: number; rank: number; total: number }
+  | { step: 'done'; course: SelectedCourse; score: number; rank: number; total: number };
 
 export default function RateScreen() {
   const trpc = useTRPC();
@@ -54,7 +54,7 @@ export default function RateScreen() {
 
   const onRatingResult = (course: SelectedCourse, res: RatingStepResult) => {
     if (res.done) {
-      setState({ step: 'round', course, score: res.score, rank: res.rank });
+      setState({ step: 'round', course, score: res.score, rank: res.rank, total: res.total });
     } else {
       setState({ step: 'compare', course, sessionId: res.sessionId, pivotCourseId: res.pivotCourseId });
     }
@@ -89,8 +89,8 @@ export default function RateScreen() {
             course={state.course}
             sessionId={state.sessionId}
             firstPivotCourseId={state.pivotCourseId}
-            onDone={({ score, rank }) =>
-              setState({ step: 'round', course: state.course, score, rank })
+            onDone={({ score, rank, total }) =>
+              setState({ step: 'round', course: state.course, score, rank, total })
             }
           />
         )}
@@ -100,12 +100,14 @@ export default function RateScreen() {
             course={state.course}
             score={state.score}
             rank={state.rank}
+            total={state.total}
             onLogged={() =>
               setState({
                 step: 'done',
                 course: state.course,
                 score: state.score,
                 rank: state.rank,
+                total: state.total,
               })
             }
           />

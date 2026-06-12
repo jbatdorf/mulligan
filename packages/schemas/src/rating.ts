@@ -43,6 +43,7 @@ export const ratingFinalResult = z.object({
   courseId: z.uuid(),
   score: z.number().min(0).max(10),
   rank: z.number().int().min(1),
+  total: z.number().int().min(1),
 });
 
 export const ratingStepResult = z.discriminatedUnion("done", [

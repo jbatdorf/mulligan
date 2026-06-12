@@ -84,14 +84,15 @@ async function seed() {
   // Users
   const insertedUsers = await db
     .insert(users)
-    .values(
-      Array.from({ length: 10 }).map(() => ({
+    .values([
+      { id: "50fbe898-a98f-4c96-baef-541462e5fe94", name: "Dev User" },
+      ...Array.from({ length: 10 }).map(() => ({
         name: faker.person.fullName(),
         email: faker.internet.email(),
         phone: faker.phone.number({ style: "national" }),
         isPrivate: faker.datatype.boolean({ probability: 0.2 }),
-      }))
-    )
+      })),
+    ])
     .returning();
   console.log(`👤 Seeded ${insertedUsers.length} users`);
 
@@ -135,13 +136,15 @@ async function seed() {
     const ratedCourses = pickMultiple(insertedCourses, randomInt(4, 8));
 
     for (const course of ratedCourses) {
+      const sentiment = pickRandom(SENTIMENTS);
+      const scoreRange = { disliked: [0.0, 3.3], fine: [3.4, 6.6], liked: [6.7, 10.0] }[sentiment];
       const [rating] = await db
         .insert(userCourseRatings)
         .values({
           userId: user.id,
           courseId: course.id,
-          score: randomFloat(3, 10),
-          initialSentiment: pickRandom(SENTIMENTS),
+          score: randomFloat(scoreRange[0], scoreRange[1]),
+          initialSentiment: sentiment,
           comparisonCount: randomInt(3, 10),
           photos: Array.from({ length: randomInt(0, 4) }).map(() =>
             faker.image.url({ width: 800, height: 600 })

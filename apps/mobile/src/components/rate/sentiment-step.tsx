@@ -7,7 +7,7 @@ import type { SelectedCourse } from './search-step';
 // Mirror of the API's RatingStepResult discriminated union.
 export type RatingStepResult =
   | { done: false; sessionId: string; courseId: string; pivotCourseId: string }
-  | { done: true; courseId: string; score: number; rank: number };
+  | { done: true; courseId: string; score: number; rank: number; total: number };
 
 type Sentiment = 'disliked' | 'fine' | 'liked';
 

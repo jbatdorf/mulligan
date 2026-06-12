@@ -11,7 +11,7 @@ type Props = {
   course: SelectedCourse;
   sessionId: string;
   firstPivotCourseId: string;
-  onDone: (result: { score: number; rank: number }) => void;
+  onDone: (result: { score: number; rank: number; total: number }) => void;
 };
 
 export function CompareStep({ course, sessionId, firstPivotCourseId, onDone }: Props) {
@@ -25,7 +25,7 @@ export function CompareStep({ course, sessionId, firstPivotCourseId, onDone }: P
     trpc.rating.submitComparison.mutationOptions({
       onSuccess: (res) => {
         if (res.done) {
-          onDone({ score: res.score, rank: res.rank });
+          onDone({ score: res.score, rank: res.rank, total: res.total });
         } else {
           setPivotCourseId(res.pivotCourseId);
           setCount((c) => c + 1);

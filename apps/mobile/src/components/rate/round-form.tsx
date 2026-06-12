@@ -12,10 +12,11 @@ type Props = {
   course: SelectedCourse;
   score: number;
   rank: number;
+  total: number;
   onLogged: () => void;
 };
 
-export function RoundForm({ course, score, rank, onLogged }: Props) {
+export function RoundForm({ course, score, rank, total, onLogged }: Props) {
   const trpc = useTRPC();
   const [playedAt, setPlayedAt] = useState(todayISO());
   const [strokes, setStrokes] = useState('');
@@ -47,7 +48,7 @@ export function RoundForm({ course, score, rank, onLogged }: Props) {
         <Text className="text-5xl font-extrabold text-green-700 dark:text-green-400">
           {score.toFixed(1)}
         </Text>
-        <Text className="text-sm text-green-700 dark:text-green-400">#{rank} in this list</Text>
+        <Text className="text-sm text-green-700 dark:text-green-400">#{rank} of {total} courses</Text>
       </View>
 
       <Text className="text-lg font-bold text-black dark:text-white">Round details</Text>

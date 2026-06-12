@@ -138,10 +138,6 @@ async function finalize(
   const targetScores = scoreBand(newGroups, bandFor(sentiment));
   const score = targetScores.get(courseId)!;
 
-  // rank: 1 = best (top group). newGroups is worst→best.
-  const groupIdx = newGroups.findIndex((g) => g.includes(courseId));
-  const rank = newGroups.length - groupIdx;
-
   const result = await db.transaction(async (tx) => {
     // Detect a re-rate that changed bands → the old band must also be re-scored.
     const [existing] = await tx
@@ -231,23 +227,38 @@ async function finalize(
     // Synchronous aggregate recompute (swap for a queue later).
     await recomputeAggregateScores(tx, [...affected]);
 
-    return { done: true as const, courseId, score, rank };
+    // Overall rank and total across all sentiment bands.
+    const [{ above }] = await tx
+      .select({ above: sql<number>`count(*)::int` })
+      .from(userCourseRatings)
+      .where(
+        and(
+          eq(userCourseRatings.userId, userId),
+          sql`${userCourseRatings.score} > ${score}`,
+        )
+      );
+    const [{ total }] = await tx
+      .select({ total: sql<number>`count(*)::int` })
+      .from(userCourseRatings)
+      .where(eq(userCourseRatings.userId, userId));
+
+    return { done: true as const, courseId, score, rank: above + 1, total };
   });
 
   await redis.del(sessionKey(userId));
   return result;
 }
 
-async function logBandRankings(userId: string, sentiment: Sentiment, log: Logger): Promise<void> {
+async function logAllRankings(userId: string, log: Logger): Promise<void> {
   const rows = await db
-    .select({ name: courses.name, score: userCourseRatings.score })
+    .select({ name: courses.name, score: userCourseRatings.score, sentiment: userCourseRatings.initialSentiment })
     .from(userCourseRatings)
     .innerJoin(courses, eq(userCourseRatings.courseId, courses.id))
-    .where(and(eq(userCourseRatings.userId, userId), eq(userCourseRatings.initialSentiment, sentiment)))
+    .where(eq(userCourseRatings.userId, userId))
     .orderBy(desc(userCourseRatings.score));
   log.debug(
-    { sentiment, rankings: rows.map((r, i) => `#${i + 1} ${r.name} (${r.score.toFixed(1)})`) },
-    `${sentiment} band rankings`
+    { rankings: rows.map((r, i) => `#${i + 1} ${r.name} (${r.score.toFixed(1)}) [${r.sentiment}]`) },
+    "overall rankings"
   );
 }
 
@@ -314,7 +325,7 @@ export async function startSession(
     const result = await finalize(session, { insertionIndex: session.lo });
     if (result.done) {
       log.info({ course: course.name, score: result.score, rank: result.rank }, "rating finalized");
-      await logBandRankings(userId, sentiment, log);
+      await logAllRankings(userId, log);
     }
     return result;
   }
@@ -400,7 +411,7 @@ export async function submitComparison(
         { course: session.courseNames[session.courseId], score: result.score, rank: result.rank },
         "rating finalized"
       );
-      await logBandRankings(userId, session.sentiment, log);
+      await logAllRankings(userId, log);
     }
     return result;
   }
@@ -420,7 +431,7 @@ export async function submitComparison(
         { course: session.courseNames[session.courseId], score: result.score, rank: result.rank },
         "rating finalized"
       );
-      await logBandRankings(userId, session.sentiment, log);
+      await logAllRankings(userId, log);
     }
     return result;
   }
@@ -433,7 +444,7 @@ export async function submitComparison(
         { course: session.courseNames[session.courseId], score: result.score, rank: result.rank },
         "rating finalized"
       );
-      await logBandRankings(userId, session.sentiment, log);
+      await logAllRankings(userId, log);
     }
     return result;
   }
